@@ -1,6 +1,7 @@
 from functools import wraps
 from flask import request, abort
 
+# docs - https://flask-user.readthedocs.io/en/latest/authorization.html
 # adapted from flask_user - https://github.com/lingthio/Flask-User/blob/master/flask_user/decorators.py
 def has_roles(*requirements):
     role_names = request.user['roles']
