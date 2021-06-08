@@ -3,27 +3,33 @@ from rbac import rbac
 
 
 blueprint = Blueprint('test', __name__)
-
+app = Flask(__name__)
 
 # ------ ROUTES -----------------
 @blueprint.route('/', methods=['GET'])
-@rbac.allow(['IT'], methods=['GET'], endpoint='test.hello_world')
+# @rbac.allow(['IT'], methods=['GET'], endpoint='test.hello_world')
 def hello_world():
     return f'GET: Welcome { g.current_user.username }'
 
+# should use .exempt but it doesn't play nicely with blueprints and simply uses
+# the function name
 @blueprint.route('/', methods=['POST'])
-@rbac.allow(['anonymous'], methods=['POST'], endpoint='test.post_hello_world')
+# @rbac.allow(['superuser'], methods=['POST'], endpoint='test.post_hello_world')
 def post_hello_world():
     return f'POST: You posted { g.current_user.username }'
 
 @blueprint.route('/', methods=['PATCH'])
-@rbac.allow(['marketing'], methods=['PATCH'], endpoint='test.patch_hello_world')
+# @rbac.allow(['marketing'], methods=['PATCH'], endpoint='test.patch_hello_world')
 def patch_hello_world():
     return f'POST: You patched { g.current_user.username }'
+
+# exempt endpoint so all can access
+@blueprint.route('/all', methods=['GET'])
+@rbac.exempt(endpoint='test.all_access')
+def all_access():
+    return f'You can access Me'
 # --------------------------------------
 
-
-app = Flask(__name__)
 
 app.config['RBAC_USE_WHITE'] = True # use whitelist
 
