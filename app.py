@@ -1,34 +1,38 @@
-from flask import Flask, Blueprint, request
-from users import users
-from decorators import roles_required
+from flask import Flask, Blueprint, request, g
+from rbac import rbac
 
-def authenticate_request():
-    user = request.headers.get('authorization', '')
-    request.user = users[user.split(' ')[-1]]
 
 blueprint = Blueprint('test', __name__)
 
+
 # ------ ROUTES -----------------
 @blueprint.route('/', methods=['GET'])
-@roles_required('IT') # IT only
+@rbac.allow(['IT'], methods=['GET'], endpoint='test.hello_world')
 def hello_world():
-    return f'GET: Welcome { request.user["username"] }'
+    return f'GET: Welcome { g.current_user.username }'
 
 @blueprint.route('/', methods=['POST'])
-@roles_required('marketing', 'IT') # marketing and IT
+@rbac.allow(['anonymous'], methods=['POST'], endpoint='test.post_hello_world')
 def post_hello_world():
-    return f'POST: You posted { request.user["username"] }'
+    return f'POST: You posted { g.current_user.username }'
 
 @blueprint.route('/', methods=['PATCH'])
-@roles_required(['marketing', 'IT']) # marketing or IT
+@rbac.allow(['marketing'], methods=['PATCH'], endpoint='test.patch_hello_world')
 def patch_hello_world():
-    return f'POST: You patched { request.user["username"] }'
+    return f'POST: You patched { g.current_user.username }'
 # --------------------------------------
 
 
 app = Flask(__name__)
-blueprint.before_request(authenticate_request)
+
+app.config['RBAC_USE_WHITE'] = True # use whitelist
+
+rbac.init_app(app)
+# Only allowing rules can access the resources.
+# This means, all deny rules and rules you did not add cannot access the resources
+
 app.register_blueprint(blueprint)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
