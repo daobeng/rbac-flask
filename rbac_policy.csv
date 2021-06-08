@@ -1,0 +1,7 @@
+p, IT, /, GET
+p, marketing, /, *
+p, marketing, /*, GET
+p, marketing, /:id/test, *
+
+g, superuser, IT
+g, superuser, marketing
