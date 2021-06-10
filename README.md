@@ -1,5 +1,5 @@
 # rbac-flask
-RBAC in Flask using decorators, flask-rbac and pycasbin/py-authz
+Role Based Access Control in Flask using decorators, flask-rbac and pycasbin/py-authz
 
 ## Branches
 [Using Simple Decorators](https://github.com/daobeng/rbac-flask/tree/wrapper)
