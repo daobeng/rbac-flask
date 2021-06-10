@@ -18,7 +18,7 @@ rbac = GWRBAC()
 # and choose?
 
 rules = [
-    # (subjects, action, object)
+    # (subjects, actions, object) -> can list multiple subjects and multiple methods
     (['IT'], ['GET'], 'test.hello_world'),
     (['marketing'], ['PATCH'], 'test.patch_hello_world'),
     (['superuser'], ['POST'], 'test.post_hello_world')
