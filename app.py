@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, request, g, jsonify
+from flask import Flask, Blueprint, request, g, jsonify, url_for
 import casbin
 from adapter import ArrayAdapter
 from users import users
@@ -71,6 +71,19 @@ def get_all_hello_world():
 @blueprint.route('/<int:id>/test', methods=['GET'])
 def final_one(id):
     return f'POST: { id }'
+
+
+@blueprint.route('/site-map', methods=['GET'])
+def site_map():
+    # can be used to surface endpoints for some minor
+    relevant_methods = {'GET', 'PUT', 'POST', 'PATCH', 'DELETE'}
+
+    links = []
+    for rule in app.url_map.iter_rules():
+        methods = list(rule.methods & relevant_methods)
+        links.append((methods, rule.rule))
+
+    return jsonify(links)
 # --------------------------------------
 
 
