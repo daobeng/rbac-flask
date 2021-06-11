@@ -1,13 +1,11 @@
-from flask import Flask, Blueprint, request, g
-from flask_authz import CasbinEnforcer
+from flask import Flask, Blueprint, request, g, jsonify
+import casbin
 from adapter import ArrayAdapter
 from users import users
 
 blueprint = Blueprint('test', __name__)
 
 app = Flask(__name__)
-app.config['CASBIN_MODEL'] = 'casbinmodel.conf'
-app.config['CASBIN_OWNER_HEADERS'] = {} # set empty since owner_loader will be provided
 
 # fileadapter
 # policy explained, policies at the top
@@ -30,42 +28,54 @@ rules = [
 ]
 
 adapter = ArrayAdapter(rules)
-casbin_enforcer = CasbinEnforcer(app, adapter)
-casbin_enforcer.owner_loader(lambda: g.current_user['roles'])
+casbin_enforcer = casbin.Enforcer('casbinmodel.conf', adapter)
+
 
 def before_request():
     user = users[request.headers.get('authorization', '').split(' ')[-1]]
     g.current_user = user
 
+# use casbin enforcer as middleware
+def casbin_enforcer_middleware():
+    # enforce permissions if X-EnforcePermissions: true is passed in header as roll out plan
+    use_enforcer = request.headers.get('X-EnforcePermissions', '').lower() == 'true'
+
+    if use_enforcer:
+        uri = str(request.path)
+        for role in g.current_user['roles']:
+            if casbin_enforcer.enforce(role, uri, request.method):
+                break
+        else:
+            user = g.current_user['username']
+            app.logger.error(f'Unauthorized attempt: method: { request.method } resource: { uri } by { user }')
+            return (jsonify({'message': 'Unauthorized'}), 401)
+
+
 # ------ ROUTES -----------------
 @blueprint.route('/', methods=['GET'])
-@casbin_enforcer.enforcer
 def hello_world():
     return f'GET: Welcome { g.current_user["username"] }'
 
 @blueprint.route('/', methods=['POST'])
-@casbin_enforcer.enforcer
 def post_hello_world():
     return f'POST: You posted { g.current_user["username"] }'
 
 @blueprint.route('/', methods=['PATCH'])
-@casbin_enforcer.enforcer
 def patch_hello_world():
     return f'POST: You patched { g.current_user["username"] }'
 
 @blueprint.route('/all', methods=['GET'])
-@casbin_enforcer.enforcer
 def get_all_hello_world():
     return f'POST: You patched { g.current_user["username"] }'
 
 @blueprint.route('/<int:id>/test', methods=['GET'])
-@casbin_enforcer.enforcer
 def final_one(id):
     return f'POST: { id }'
 # --------------------------------------
 
 
 app.before_request(before_request)
+app.before_request(casbin_enforcer_middleware)
 app.register_blueprint(blueprint)
 
 
